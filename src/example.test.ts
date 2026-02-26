@@ -22,13 +22,13 @@ class User {
   @Property({ type: 'email', unique: true })
   email: string;
 
-  // This works partially, but by default is undefined
-  @Property({ type: 'string', default: OnlineState.OFFLINE, persist: false })
-  onlineString: OnlineState = OnlineState.OFFLINE
-
   // This throws with 'InvalidFieldNameException: no such column: online'
   @Enum({ items: () => OnlineState, default: OnlineState.OFFLINE, persist: false })
   onlineEnum: OnlineState = OnlineState.OFFLINE
+
+  // This works partially, but by default is undefined
+  @Property({ type: 'string', default: OnlineState.OFFLINE, persist: false })
+  onlineString: OnlineState = OnlineState.OFFLINE
 
   constructor(name: string, email: string) {
     this.name = name;
@@ -55,24 +55,24 @@ afterAll(async () => {
 
 test('basic CRUD example', async () => {
   // Create user
-  orm.em.create(User, { name: 'Foo', email: 'bar', onlineString: OnlineState.OFFLINE, onlineEnum: OnlineState.OFFLINE })
+  orm.em.create(User, { name: 'Foo', email: 'bar', onlineEnum: OnlineState.OFFLINE, onlineString: OnlineState.OFFLINE })
   await orm.em.flush()
   orm.em.clear()
 
   // Find
   const user = await orm.em.findOneOrFail(User, { email: 'bfoor'})
-  expect(user.onlineString).toBe(OnlineState.OFFLINE)
   expect(user.onlineEnum).toBe(OnlineState.OFFLINE)
+  expect(user.onlineString).toBe(OnlineState.OFFLINE)
 
   // Toggle state
-  user.onlineString = OnlineState.ONLINE
   user.onlineEnum = OnlineState.ONLINE
+  user.onlineString = OnlineState.ONLINE
 
   await orm.em.flush()
   orm.em.clear()
 
   // Find user and assert online state
   const testUser = await orm.em.findOneOrFail(User, { email: 'foo' })
+  expect(testUser.onlineEnum).toBe(OnlineState.OFFLINE)
   expect(testUser.onlineString).toBe(OnlineState.OFFLINE) 
-  expect(testUser.onlineEnum).toBe(OnlineState.OFFLINE) 
 });
