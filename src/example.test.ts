@@ -55,12 +55,12 @@ afterAll(async () => {
 
 test('basic CRUD example', async () => {
   // Create user
-  orm.em.create(User, { name: 'Foo', email: 'bar', onlineEnum: OnlineState.OFFLINE, onlineString: OnlineState.OFFLINE })
+  orm.em.create(User, { name: 'Foo', email: 'foo', onlineEnum: OnlineState.OFFLINE, onlineString: OnlineState.OFFLINE })
   await orm.em.flush()
   orm.em.clear()
 
   // Find
-  const user = await orm.em.findOneOrFail(User, { email: 'bfoor'})
+  const user = await orm.em.findOneOrFail(User, { email: 'foo'})
   expect(user.onlineEnum).toBe(OnlineState.OFFLINE)
   expect(user.onlineString).toBe(OnlineState.OFFLINE)
 
