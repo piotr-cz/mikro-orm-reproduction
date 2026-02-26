@@ -46,7 +46,7 @@ beforeAll(async () => {
     debug: ['query', 'query-params'],
     allowGlobalContext: true, // only for testing
   });
-  await orm.schema.refresh();
+  await orm.schema.refresh(); // InvalidFieldNameException: no such column: online_enum
 });
 
 afterAll(async () => {
@@ -62,7 +62,7 @@ test('basic CRUD example', async () => {
   // Find
   const user = await orm.em.findOneOrFail(User, { email: 'foo'})
   expect(user.onlineEnum).toBe(OnlineState.OFFLINE)
-  expect(user.onlineString).toBe(OnlineState.OFFLINE)
+  expect(user.onlineString).toBe(OnlineState.OFFLINE) // AssertionError: expected undefined to be 'offline'
 
   // Toggle state
   user.onlineEnum = OnlineState.ONLINE
