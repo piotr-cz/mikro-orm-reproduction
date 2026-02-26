@@ -1,16 +1,34 @@
-import { Entity, MikroORM, PrimaryKey, Property } from '@mikro-orm/sqlite';
+import 'reflect-metadata'
+
+import { beforeAll, afterAll, test, expect } from 'vitest'
+
+import { MikroORM } from '@mikro-orm/sqlite';
+import { Entity, PrimaryKey, Property, Enum } from '@mikro-orm/decorators/legacy';
+
+enum OnlineState {
+  OFFLINE = 'offline',
+  ONLINE  = 'online',
+}
 
 @Entity()
 class User {
 
-  @PrimaryKey()
+  @PrimaryKey({ type: 'integer' })
   id!: number;
 
-  @Property()
+  @Property({ type: 'string' })
   name: string;
 
-  @Property({ unique: true })
+  @Property({ type: 'email', unique: true })
   email: string;
+
+  // This works partially, but by default is undefined
+  @Property({ type: 'string', default: OnlineState.OFFLINE, persist: false })
+  onlineString: OnlineState = OnlineState.OFFLINE
+
+  // This throws with 'InvalidFieldNameException: no such column: online'
+  @Enum({ items: () => OnlineState, default: OnlineState.OFFLINE, persist: false })
+  onlineEnum: OnlineState = OnlineState.OFFLINE
 
   constructor(name: string, email: string) {
     this.name = name;
@@ -28,7 +46,7 @@ beforeAll(async () => {
     debug: ['query', 'query-params'],
     allowGlobalContext: true, // only for testing
   });
-  await orm.schema.refreshDatabase();
+  await orm.schema.refresh();
 });
 
 afterAll(async () => {
@@ -36,16 +54,25 @@ afterAll(async () => {
 });
 
 test('basic CRUD example', async () => {
-  orm.em.create(User, { name: 'Foo', email: 'foo' });
-  await orm.em.flush();
-  orm.em.clear();
+  // Create user
+  orm.em.create(User, { name: 'Foo', email: 'bar', onlineString: OnlineState.OFFLINE, onlineEnum: OnlineState.OFFLINE })
+  await orm.em.flush()
+  orm.em.clear()
 
-  const user = await orm.em.findOneOrFail(User, { email: 'foo' });
-  expect(user.name).toBe('Foo');
-  user.name = 'Bar';
-  orm.em.remove(user);
-  await orm.em.flush();
+  // Find
+  const user = await orm.em.findOneOrFail(User, { email: 'bfoor'})
+  expect(user.onlineString).toBe(OnlineState.OFFLINE)
+  expect(user.onlineEnum).toBe(OnlineState.OFFLINE)
 
-  const count = await orm.em.count(User, { email: 'foo' });
-  expect(count).toBe(0);
+  // Toggle state
+  user.onlineString = OnlineState.ONLINE
+  user.onlineEnum = OnlineState.ONLINE
+
+  await orm.em.flush()
+  orm.em.clear()
+
+  // Find user and assert online state
+  const testUser = await orm.em.findOneOrFail(User, { email: 'foo' })
+  expect(testUser.onlineString).toBe(OnlineState.OFFLINE) 
+  expect(testUser.onlineEnum).toBe(OnlineState.OFFLINE) 
 });
